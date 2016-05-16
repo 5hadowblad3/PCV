@@ -1,59 +1,48 @@
-typedef semaphore {
-	byte cpt;
-};
-
 typedef cyclicbarrier {
 	int total;
-	semaphore s;
 	int nready;
-	bool done;
+	bool broken;
 };
 
 inline new(c, v) {
-	atomic {
-		c.total = v;
-		c.done = false;
-		initialise(c, 1);
-	}
-}
-
-inline recv (c) {
-	atomic {
-		if
-		::(c.s.cpt > 0)->c.s.cpt--;
-        fi;
-	}
-};
-
-inline release (c) {
-	atomic {
-		c.s.cpt++;
-	}
-};
-
-inline initialise(c, v) {
-    atomic {
-        c.s.cpt = v;
-    }
-
+	c.total = v;
+	c.broken = false;
+	c.nready = 0;
 };
 
 inline await(c) {
 	atomic {
 		c.nready++;
-		if
-		::(c.nready == c.total) -> c.done = true;
-		::else skip;
-		fi; 
+		printf("process %d is waiting\n", _pid);
+		(c.nready == c.total) -> skip;
 	}
 }
 
+inline getNumberWaiting(c, res) {
+	res = c.nready;
+}
+
+inline getParties(c, res) {
+	res = c.total;
+}
+
+inline isBroken(c, res) {
+	res = c.broken;
+}
 
 inline reset(c) {
 	atomic {
+		if 
+			::(c.nready > 0 && c.nready < c.total) ->
+				c.broken = true;
+				printf("BrokenBarrierException: Some process is waiting!\n");
+			::else skip;		
+		fi;
+
+		assert(!c.broken);
+		c.broken = false;
 		c.nready = 0;
-		c.done = false;
-	}	
+	}
 }
 
 
