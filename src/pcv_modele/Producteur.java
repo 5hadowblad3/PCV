@@ -5,16 +5,14 @@ import java.util.concurrent.CyclicBarrier;
 
 public class Producteur implements Runnable
 {
-	Tampon t;
 	CyclicBarrier barrier;
-	private int num_pro;
 	private final int NUM_PRO=10;
+	private int rate;
 	
-	public Producteur(Tampon t, CyclicBarrier barrier)
+	public Producteur(CyclicBarrier barrier, int rate)
 	{
-		this.t=t;
 		this.barrier=barrier;
-		this.num_pro=0;
+		this.rate=rate;
 	}
 
 	public void run() 
@@ -22,20 +20,23 @@ public class Producteur implements Runnable
 		int i;
 		for(i=0;i<NUM_PRO;i++)
 		{
-			synchronized(t)
+			try
 			{
-				this.num_pro++;
-				t.setNb(t.getNb()+1);
-				System.out.println("Producteur "+Thread.currentThread().getId()+" produit "+this.num_pro+", Nombre de produit maintenant "+t.getNb());
-			}
+				Thread.sleep(this.rate*500);
+			} 
+			catch (InterruptedException e) 
+			{
+				e.printStackTrace();
+			}	
 		}
 		
 		try 
 		{
 			System.out.println("Producteur "+Thread.currentThread().getId()+" est attendu");
-			barrier.await();
+			System.out.println((barrier.getNumberWaiting()+1)+" thread est attendu");
+			this.barrier.await();
 		} 
-		catch (InterruptedException e) 
+		catch(InterruptedException e)
 		{
 			e.printStackTrace();
 		}
@@ -43,5 +44,7 @@ public class Producteur implements Runnable
 		{
 			e.printStackTrace();
 		}
+		
+		System.out.println("Producteur "+Thread.currentThread().getId()+" est r¨¦veil");
 	}
 }
